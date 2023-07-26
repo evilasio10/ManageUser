@@ -55,16 +55,22 @@ app.MapGet("/usuarios/{id}", [Authorize(Roles = "Atendimento,Admin")] (AppDbCont
 
 app.MapPost("/usuarios", [Authorize(Roles = "Atendimento,Admin")] (AppDbContext context, [FromBody] Usuario _us) =>
 {
-    var User = context.Usuario.Add(_us);
+    context.Usuario.Add(_us);
     context.SaveChanges();
-    return Results.Ok(User);
+    return Results.Ok(_us);
 });
 
 app.MapPut("/usuarios/{id}", [Authorize(Roles = "Atendimento,Admin")] (AppDbContext context, int id, [FromBody] Usuario _us) =>
 {
     if (_us == null || id != _us.ide_usuario) return Results.BadRequest();
-    if (context.Usuario.Find(id) == null) return Results.NotFound();
-    context.Usuario.Update(_us);
+    var usuario = context.Usuario.Find(id);
+    if (usuario == null) return Results.NotFound();
+
+    usuario.Email = _us.Email;
+    usuario.UserName = _us.UserName;
+    usuario.Role = _us.Role;
+
+    context.Usuario.Update(usuario);
     context.SaveChanges();
     return Results.Ok();
 });
@@ -82,3 +88,4 @@ app.MapDelete("/usuarios/{id}", [Authorize(Roles = "Admin")] (AppDbContext conte
 
 app.UseSwaggerUI();
 app.Run();
+
