@@ -1,3 +1,4 @@
+using Azure.Core;
 using ManageUser.Model;
 using ManageUser.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -55,9 +56,16 @@ app.MapGet("/usuarios/{id}", [Authorize(Roles = "Atendimento,Admin")] (AppDbCont
 
 app.MapPost("/usuarios", [Authorize(Roles = "Atendimento,Admin")] (AppDbContext context, [FromBody] Usuario _us) =>
 {
-    context.Usuario.Add(_us);
-    context.SaveChanges();
-    return Results.Ok(_us);
+    if (context.Usuario.Where(p => p.UserName == _us.UserName || p.Email == _us.Email).FirstOrDefault() != null)
+    {
+        return Results.NoContent();
+    }
+    else
+    {
+        context.Usuario.Add(_us);
+        context.SaveChanges();
+        return Results.Ok(_us);
+    }
 });
 
 app.MapPut("/usuarios/{id}", [Authorize(Roles = "Atendimento,Admin")] (AppDbContext context, int id, [FromBody] Usuario _us) =>
@@ -75,15 +83,25 @@ app.MapPut("/usuarios/{id}", [Authorize(Roles = "Atendimento,Admin")] (AppDbCont
     return Results.Ok();
 });
 
-app.MapDelete("/usuarios/{id}", [Authorize(Roles = "Admin")] (AppDbContext context, int id) =>
+app.MapDelete("/usuarios/{id}", [Authorize(Roles = "Admin")] (AppDbContext context, HttpContext httpContext, int id) =>
 {
+
     var user = context.Usuario.Where(p => p.ide_usuario == id).FirstOrDefault();
     if (user != null)
     {
-        context.Remove(user);
-        context.SaveChanges();
+        if (user.UserName == httpContext.User.Identity.Name)
+        {
+            Results.NoContent();
+        }
+        else
+        {
+            context.Remove(user);
+            context.SaveChanges();
+            Results.Ok();
+        }
     }
-    return user != null ? Results.Ok() : Results.NotFound();
+    else    
+    Results.NotFound();
 });
 
 app.UseSwaggerUI();
