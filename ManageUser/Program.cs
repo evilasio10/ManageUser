@@ -91,17 +91,17 @@ app.MapDelete("/usuarios/{id}", [Authorize(Roles = "Admin")] (AppDbContext conte
     {
         if (user.UserName == httpContext.User.Identity.Name)
         {
-            Results.NoContent();
+            return Results.NoContent();
         }
         else
         {
             context.Remove(user);
             context.SaveChanges();
-            Results.Ok();
+            return Results.Ok();
         }
     }
-    else    
-    Results.NotFound();
+    else
+        return Results.NotFound();
 });
 
 app.UseSwaggerUI();
